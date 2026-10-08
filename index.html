@@ -3,12 +3,17 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Marginalia — Vol. 57</title>
+<title>設計人 — Vol.57</title>
+    <link rel="icon" href="./img/fab icon_57.png"> 
+
+
+
+
 <meta name="description" content="Marginalia Vol. 01 — a 96-page right-to-left editorial book." />
 
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@300;400;500;600&family=Instrument+Serif:ital@0;1&family=Noto+Serif+JP:wght@300;500&family=Noto+Sans+TC:wght@300;400;500&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@300;400;500;600&family=Instrument+Serif:ital@0;1&family=Noto+Serif+JP:wght@300;500&family=Noto+Sans+TC:wght@300;400;500&family=Noto+Sans+Mono:wght@400;500&display=swap" rel="stylesheet" />
 
 <style>
 /* ==========================================================
@@ -69,12 +74,14 @@ body::before {
   padding: 22px var(--gutter);
   mix-blend-mode: difference;
 }
-.logo { display: flex; align-items: center; gap: 10px; font-weight: 500; letter-spacing: -.01em; font-size: 15px; }
-.logo__mark {
-  width: 18px; height: 18px; border-radius: 50%; border: 1px solid currentColor;
-  background: linear-gradient(90deg, transparent 50%, currentColor 50%);
+.logo { display: flex; align-items: center; gap: 14px; }
+/* white logo + the header's mix-blend-mode: difference = auto black/white inversion */
+.logo__img {
+  height: 34px;          /* ← logo size: change only this number */
+  width: auto; display: block;
+  user-select: none; -webkit-user-drag: none;
 }
-.logo__vol { color: var(--mute); font-weight: 400; }
+.logo__vol { font-size: 14px; color: var(--mute); font-weight: 400; }
 .nav { display: flex; align-items: center; gap: 28px; font-size: 13px; }
 .nav a:not(.cta) { color: var(--mute); transition: color .3s; }
 .nav a:not(.cta):hover { color: var(--fg); }
@@ -92,7 +99,7 @@ body::before {
 .cta:hover { color: var(--bg); }
 .cta:hover::before { transform: translateY(0); }
 .cta span { transition: transform .5s var(--ease); }
-.cta:hover span:last-child { transform: translateX(-3px); }
+.cta:hover .cta__arrow { transform: translateY(3px); }
 
 @media (max-width: 640px) { .nav a:not(.cta) { display: none; } }
 
@@ -163,7 +170,15 @@ body::before {
 .marquee__track span {
   font-family: var(--serif); font-size: clamp(22px, 3vw, 38px); padding-right: 48px; color: var(--mute);
 }
-.marquee__track span b { font-family: var(--sans); font-weight: 400; color: var(--fg); letter-spacing: -.03em; }
+/* names: bold pure white · team / company: grey serif */
+.marquee__track span b { font-family: var(--sans); font-weight: 600; color: #ffffff; letter-spacing: -.02em; }
+.marquee__track span i {
+  font-style: normal; color: var(--mute); font-size: .58em; letter-spacing: .01em; margin: 0 .2em 0 .45em;
+  /* English in Noto Sans Mono, Chinese falls back to Noto Sans TC */
+  font-family: "Noto Sans Mono", ui-monospace, Menlo, Consolas, "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", monospace;
+}
+/* the "—" separators: sans-serif instead of serif */
+.marquee__track span { font-family: var(--sans); }
 /* RTL: the band drifts left-to-right, like the reading motion */
 @keyframes marquee { from { transform: translateX(-50%); } to { transform: translateX(0); } }
 
@@ -403,7 +418,7 @@ body::before {
 /* ==========================================================
    SPECIFICATIONS
    ========================================================== */
-.specs { padding: clamp(80px, 12vh, 140px) var(--gutter); }
+.specs { padding: clamp(80px, 12vh, 140px) var(--gutter); scroll-margin-top: 20px; }
 .spec-grid {
   display: grid; grid-template-columns: repeat(4, 1fr);
   border-top: 1px solid var(--fg); border-left: 1px solid var(--line);
@@ -472,14 +487,15 @@ body::before {
 
 <!-- ============ HEADER ============ -->
 <header class="header">
-  <a href="#top" class="logo" aria-label="Marginalia home">
-    <span class="logo__mark"></span> Marginalia <span class="logo__vol">/ Vol.57</span>
+  <a href="#top" class="logo" aria-label="設計人 Vol.57 回到頂部">
+    <img src="./img/logo.png" alt="設計人" class="logo__img" />
+    <span class="logo__vol">Vol.57</span>
   </a>
-  <nav class="nav">
-    <a href="#reader">Preview</a>
-    <a href="#specs">Specifications</a>
-    <a href="#reader" class="cta"><span>Acquire / Read</span><span>←</span></a>
-  </nav>
+<nav class="nav">
+  <a href="#specs" class="cta" aria-label="前往刊物規格">
+    <span>刊物規格</span><span class="cta__arrow">↓</span>
+  </a>
+</nav>
 </header>
 
 <main id="top">
@@ -487,8 +503,8 @@ body::before {
   <!-- ============ 1. BOOK VIEWER (top of page) ============ -->
   <section class="reader" id="reader">
     <div class="stage" id="stage">
-      <span class="stage__corner tl">Marginalia — Vol.57</span>
-      <span class="stage__corner tr">RTL / 235 × 298</span>
+      <span class="stage__corner tl">設計人 — Vol.57</span>
+      <span class="stage__corner tr">R to L / 235 × 298 mm</span>
       <span class="stage__corner bl" id="spreadLabel">Spread</span>
 
       <div class="book-wrap" id="bookWrap">
@@ -526,14 +542,14 @@ body::before {
   <!-- The track scrolls by 50%, so spans 5–8 must be an exact copy of spans 1–4 -->
   <div class="marquee" aria-hidden="true">
     <div class="marquee__track">
-      <span><b>starring</b> — 郭中元 — <b>縦書き</b> — 黃國瑜 — <b>Edition of 500</b> — </span>
-      <span><b>96 pages</b> — 黃銘彰 — <b>縦書き</b> — 沒轉外框的學藝股長 — <b>Edition of 500</b> — </span>
-      <span><b>96 pages</b> — 陳念瑩 — <b>縦書き</b> — 顏伯駿 — <b>Edition of 500</b> — </span>
-      <span><b>96 pages</b> — 王芳俊 — <b>縦書き</b> — 俞璟 — <b>Edition of 500</b> — </span>
-      <span><b>starring</b> — 郭中元 — <b>縦書き</b> — 黃國瑜 — <b>Edition of 500</b> — </span>
-      <span><b>96 pages</b> — 黃銘彰 — <b>縦書き</b> — 沒轉外框的學藝股長 — <b>Edition of 500</b> — </span>
-      <span><b>96 pages</b> — 陳念瑩 — <b>縦書き</b> — 顏伯駿 — <b>Edition of 500</b> — </span>
-      <span><b>96 pages</b> — 王芳俊 — <b>縦書き</b> — 俞璟 — <b>Edition of 500</b> — </span>
+      <span><b>郭中元</b> <i>中間研究室 Midroom</i> — <b>黃國瑜</b> <i>瑜悅設計 Transform Design</i> — </span>
+      <span><b>黃銘彰</b> <i>平凡製作 studio ordinary</i> — <b>Landon</b> <i>沒轉外框的學藝股長 YouTube</i> — </span>
+      <span><b>陳念瑩</b> <i>今生緣 sell some garbage</i> — <b>顏伯駿</b> <i>三頁文工作室</i> — </span>
+      <span><b>王芳俊</b> <i>動工設計 MOKRAFT</i> — <b>俞璟</b> <i>插畫創作者</i> — </span>
+      <span><b>郭中元</b> <i>中間研究室 Midroom</i> — <b>黃國瑜</b> <i>瑜悅設計 Transform Design</i> — </span>
+      <span><b>黃銘彰</b> <i>平凡製作 studio ordinary</i> — <b>Landon</b> <i>沒轉外框的學藝股長 YouTube</i> — </span>
+      <span><b>陳念瑩</b> <i>今生緣 sell some garbage</i> — <b>顏伯駿</b> <i>三頁文工作室</i> — </span>
+      <span><b>王芳俊</b> <i>動工設計 MOKRAFT</i> — <b>俞璟</b> <i>插畫創作者</i> — </span>
     </div>
   </div>
 
@@ -542,7 +558,7 @@ body::before {
     <div class="hero__foot">
       <div class="c1"><span class="label">Vol. 57 — 2026</span></div>
       <div class="c2">
-        <p>《 設計人 》是臺藝大視傳系重要的獨立刊物，每期刊物都由指導老師和同學共同編輯完成，內容結合設計相關領域的介紹及採訪，能讓系上同學吸收新知、獲取經驗，助於設計技能的發揮，以及讓將來的新進大一生，能快速了解視傳系涵蓋的面相。</p>
+        <p>《設計人》是臺藝大視覺傳達設計學系的獨立刊物,由指導老師與系上學生共同企劃、採訪、撰文與編排,每一期都是一次完整的出版實踐。刊物關注設計在產業、教育與日常中的真實樣貌,走進工作室與展場,與設計師、策展人、藝術家及創作者對話,記錄他們的思考路徑與工作方法。<br>第五十七期以「CCCC」(Landolt's C Chart)為主題方向,寓意透過眼鏡比喻設計，重新調整觀者的焦距——不只呈現作品本身,更追問設計如何形塑我們理解世界的方式,也為每位正在尋找方向的設計學習者,留下一份隨時可以回望的地圖。</p>
       </div>
       <div class="c3">
         <a href="#specs" class="scroll-cue label" aria-label="Scroll to specifications">
@@ -556,45 +572,45 @@ body::before {
   <section class="specs" id="specs">
     <div class="section-head reveal">
       <span class="label">(02) — Specifications</span>
-      <h2>The object, <em>measured.</em></h2>
+      <h2>Specs,<em>     of The object</em></h2>
     </div>
 
     <div class="spec-grid reveal">
       <div class="spec spec--feature spec--wide">
-        <div class="spec__k"><span class="label">Extent</span><span class="idx">01</span></div>
-        <div class="spec__v">96 pp.<small>Interior pages, plus cover, back cover and endpapers</small></div>
+        <div class="spec__k"><span class="label">crew</span><span class="idx">01</span></div>
+        <div class="spec__v">22 Editors<small>文字編輯＆美術編輯＆總副編輯</small></div>
       </div>
       <div class="spec">
         <div class="spec__k"><span class="label">Format</span><span class="idx">02</span></div>
-        <div class="spec__v">235 × 298<small>mm — 23.5 × 29.8 cm portrait</small></div>
+        <div class="spec__v">235 × 298<small>mm — 23.5 × 29.8 × 0.9公分</small></div>
       </div>
       <div class="spec">
         <div class="spec__k"><span class="label">Binding</span><span class="idx">03</span></div>
-        <div class="spec__v"><em>Right-to-left</em><small>Japanese perfect bind, spine on the right</small></div>
+        <div class="spec__v"><em>右翻書</em><small>膠裝裝訂</small></div>
       </div>
       <div class="spec">
         <div class="spec__k"><span class="label">Interior stock</span><span class="idx">04</span></div>
-        <div class="spec__v">120 gsm<small>Uncoated natural white, FSC®</small></div>
+        <div class="spec__v">120 gsm<small>新超感輕塗紙, 長瑩紙業®</small></div>
       </div>
       <div class="spec">
         <div class="spec__k"><span class="label">Cover stock</span><span class="idx">05</span></div>
-        <div class="spec__v">350 gsm<small>Black board, blind deboss, soft-touch</small></div>
+        <div class="spec__v">240 gsm<small>細紋映畫, 恆成紙業®</small></div>
       </div>
       <div class="spec">
         <div class="spec__k"><span class="label">Typesetting</span><span class="idx">06</span></div>
-        <div class="spec__v"><em>縦書き</em><small>Vertical Japanese with Latin grotesque</small></div>
+        <div class="spec__v"><em>縱書</em><small>with Noto Snas CJK</small></div>
       </div>
       <div class="spec">
         <div class="spec__k"><span class="label">Printing</span><span class="idx">07</span></div>
-        <div class="spec__v">1 + 1<small>Offset, black + warm grey</small></div>
+        <div class="spec__v">波客 Poke老師<br> 監製<small>健豪印刷 新莊營業處</small></div>
       </div>
       <div class="spec spec--wide">
         <div class="spec__k"><span class="label">Edition</span><span class="idx">08</span></div>
-        <div class="spec__v">500 copies<small>Numbered by hand · ISBN 000-0-00-000000-0</small></div>
+        <div class="spec__v">500 copies<small>ISBN 978-626-7668-48-1</small></div>
       </div>
       <div class="spec spec--wide">
         <div class="spec__k"><span class="label">Weight</span><span class="idx">09</span></div>
-        <div class="spec__v">≈ 450 g<small>Ships flat in archival sleeve</small></div>
+        <div class="spec__v">≈ 450 g<small></small></div>
       </div>
     </div>
   </section>
@@ -602,23 +618,24 @@ body::before {
 
 <!-- ============ FOOTER ============ -->
 <footer class="footer">
-  <div class="footer__big reveal">Marginalia<em>.</em></div>
+  <div class="footer__big reveal">TheDesigners<em>.</em></div>
   <div class="footer__grid">
     <div class="f1">
-      <span>Colophon — Set in Inter Tight, Instrument Serif and Noto Serif JP. Designed and bound in small runs.</span>
+      <span>設計就像眼鏡。<br>將模糊不清的視野，聚焦成清晰的焦點。
+</span>
     </div>
     <div class="f2">
       <span class="label">Contact</span>
-      <a href="mailto:studio@example.com">studio@example.com</a>
-      <a href="#">Stockists</a>
+      <a href="thedesignersvol57@gmail.com">thedesignersvol57@gmail.com</a>
+      <a href="https://www.instagram.com/ntuavcd.sa?utm_source=ig_web_button_share_sheet&stkn=ZDNlZDc0MzIxNw==">ntuavcd.sa</a>
     </div>
     <div class="f3">
-      <span class="label">Follow</span>
-      <a href="#">Instagram</a>
-      <a href="#">Are.na</a>
+      <span class="label">Related</span>
+      <a href="https://www.ntua.edu.tw/">國立臺灣藝術大學</a>
+      <a href="https://vcd.ntua.edu.tw/">視覺傳達設計學系</a>
     </div>
     <div class="f4">
-      <span>© <span id="year">2026</span> Marginalia</span>
+      <span>© <span id="year">2026</span>設計人 Vol.57</span>
       <a href="#top">Back to top ↑</a>
     </div>
   </div>

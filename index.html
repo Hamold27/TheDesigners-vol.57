@@ -259,7 +259,7 @@ body::before {
 .controls {
   width: min(720px, 100%);
   margin-top: 56px;
-  display: grid; grid-template-columns: auto 1fr auto auto auto; align-items: center; gap: 18px;
+  display: grid; grid-template-columns: auto 1fr auto auto; align-items: center; gap: 18px;
 }
 .ctrl {
   width: 46px; height: 46px; border-radius: 50%;
@@ -498,41 +498,13 @@ html.fs-lock, html.fs-lock body { overflow: hidden; }
 .reveal.in { opacity: 1; transform: none; }
 
 /* ==========================================================
-   ZOOM VIEWER (pinch / wheel / drag; works on phones)
+   PHONE TWEAKS
    ========================================================== */
 .reader { overflow-x: clip; }   /* the closed book slides sideways; never widen the page on phones */
 @media (max-width: 560px) {
   .controls { gap: 10px; }
   .ctrl { width: 40px; height: 40px; }
   .progress__meta .label { display: none; }
-}
-.zoom {
-  position: fixed; inset: 0; z-index: 200; display: none;
-  background: #080808; overflow: hidden;
-  touch-action: none; overscroll-behavior: contain; cursor: grab;
-}
-.zoom.is-open { display: block; }
-.zoom:active { cursor: grabbing; }
-.zoom__stage {
-  position: absolute; left: 0; top: 0; display: flex;
-  transform-origin: 0 0; will-change: transform;
-  box-shadow: 0 30px 80px rgba(0,0,0,.6);
-}
-.zoom__stage img {
-  display: block; height: 100%; width: auto; flex: 1 1 0; min-width: 0; object-fit: cover;
-  user-select: none; -webkit-user-drag: none; pointer-events: none; background: #f2f1ee;
-}
-.zoom__bar {
-  position: absolute; left: 0; right: 0; top: 0; z-index: 2;
-  display: flex; justify-content: space-between; align-items: center;
-  padding: 14px 16px; pointer-events: none;
-}
-.zoom__bar > * { pointer-events: auto; }
-.zoom__bar .ctrl { background: rgba(10,10,10,.6); color: var(--fg); }
-.zoom__level { font-size: 12px; letter-spacing: .12em; color: var(--mute); font-variant-numeric: tabular-nums; }
-.zoom__hint {
-  position: absolute; left: 0; right: 0; bottom: 14px; text-align: center;
-  font-size: 11px; letter-spacing: .1em; color: var(--dim); pointer-events: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -589,25 +561,11 @@ html.fs-lock, html.fs-lock body { overflow: hidden; }
         <button class="ctrl" id="btnPrev" aria-label="Previous page">
           <svg viewBox="0 0 16 16"><path d="m6 3 5 5-5 5"/></svg>
         </button>
-        <button class="ctrl" id="btnZoom" aria-label="Zoom in on this spread" title="放大檢視">
-          <svg viewBox="0 0 16 16"><circle cx="7" cy="7" r="4.6"/><path d="m10.4 10.4 3.6 3.6M5 7h4M7 5v4"/></svg>
-        </button>
         <button class="ctrl" id="btnFs" aria-label="Toggle fullscreen">
           <svg viewBox="0 0 16 16" id="fsIcon"><path d="M2 6V2h4M10 2h4v4M14 10v4h-4M6 14H2v-4"/></svg>
         </button>
       </div>
-      <p class="hint">Drag a page corner · ← / → keys · click the bar to jump · 🔍 to zoom</p>
-
-      <div class="zoom" id="zoom" role="dialog" aria-modal="true" aria-label="放大檢視">
-        <div class="zoom__stage" id="zoomStage"></div>
-        <div class="zoom__bar">
-          <span class="zoom__level" id="zoomLevel">100%</span>
-          <button class="ctrl" id="zoomClose" aria-label="Close zoom">
-            <svg viewBox="0 0 16 16"><path d="M3.5 3.5l9 9M12.5 3.5l-9 9"/></svg>
-          </button>
-        </div>
-        <p class="zoom__hint">雙指縮放 · 拖曳移動 · 點兩下放大 ／ Pinch · drag · double-tap</p>
-      </div>
+      <p class="hint">Drag a page corner · ← / → keys · click the bar to jump</p>
     </div>
   </section>
 
@@ -961,7 +919,6 @@ $('#progressBar').addEventListener('click', (e) => {
 
 document.addEventListener('keydown', (e) => {
   if (['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
-  if (zoomOpen()) { if (e.key === 'Escape') closeZoom(); return; }
   if (e.key === 'ArrowLeft') { e.preventDefault(); goNext(); }
   if (e.key === 'ArrowRight') { e.preventDefault(); goPrev(); }
 });
@@ -1018,108 +975,11 @@ function exitFs() {
 }
 $('#btnFs').addEventListener('click', () => (fsOn ? exitFs() : enterFs()));
 document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement && fsOn) exitFs(); });
-document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && fsOn && !zoomOpen()) exitFs(); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && fsOn) exitFs(); });
 addEventListener('resize', () => {                 // phone rotated while in fullscreen
   if (!fsOn) return;
   clearTimeout(rzT); rzT = setTimeout(syncBookMode, 250);
 });
-
-/* ==========================================================
-   ZOOM VIEWER — pinch / drag / wheel / double-tap, no library
-   ========================================================== */
-const zoomEl = $('#zoom'), zStage = $('#zoomStage');
-const z = { s: 1, x: 0, y: 0, w: 0, h: 0, max: 6 };
-const zoomOpen = () => zoomEl.classList.contains('is-open');
-const PAGE_RATIO = 235 / 298;                       // page width / height
-
-function zClamp() {
-  const vw = innerWidth, vh = innerHeight, W = z.w * z.s, H = z.h * z.s;
-  z.x = W <= vw ? (vw - W) / 2 : Math.min(0, Math.max(vw - W, z.x));
-  z.y = H <= vh ? (vh - H) / 2 : Math.min(0, Math.max(vh - H, z.y));
-}
-function zApply() {
-  zClamp();
-  zStage.style.transform = `translate(${z.x}px, ${z.y}px) scale(${z.s})`;
-  $('#zoomLevel').textContent = Math.round(z.s * 100) + '%';
-}
-function zoomAt(ns, cx, cy) {
-  ns = Math.min(z.max, Math.max(1, ns));
-  z.x = cx - (cx - z.x) * (ns / z.s);
-  z.y = cy - (cy - z.y) * (ns / z.s);
-  z.s = ns; zApply();
-}
-function layoutZoom(count) {
-  const vw = innerWidth, vh = innerHeight;
-  let h = vh - 120, w = h * PAGE_RATIO * count;
-  if (w > vw - 24) { w = vw - 24; h = w / (PAGE_RATIO * count); }
-  z.w = w; z.h = h; z.s = 1;
-  zStage.style.width = w + 'px'; zStage.style.height = h + 'px';
-  zApply();
-}
-function openZoom() {
-  if (!pageFlip) return;
-  const pages = visiblePages().slice().reverse();   // on screen: left page first
-  zStage.innerHTML = pages.map((n) =>
-    `<img src="${CONFIG.imagePath(n)}" alt="Page ${n}" draggable="false">`).join('');
-  zStage.dataset.count = pages.length;
-  zoomEl.classList.add('is-open');
-  document.documentElement.style.overflow = 'hidden';
-  layoutZoom(pages.length);
-}
-function closeZoom() {
-  zoomEl.classList.remove('is-open');
-  document.documentElement.style.overflow = '';
-  zStage.innerHTML = '';
-}
-$('#btnZoom').addEventListener('click', openZoom);
-$('#zoomClose').addEventListener('click', closeZoom);
-addEventListener('resize', () => { if (zoomOpen()) layoutZoom(+zStage.dataset.count || 1); });
-
-/* pointer gestures */
-const pts = new Map();
-let moved = 0, lastTap = { t: 0, x: 0, y: 0 };
-zoomEl.addEventListener('pointerdown', (e) => {
-  if (e.target.closest('button')) return;
-  try { zoomEl.setPointerCapture(e.pointerId); } catch (_) {}
-  pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
-  if (pts.size === 1) moved = 0;
-});
-zoomEl.addEventListener('pointermove', (e) => {
-  const prev = pts.get(e.pointerId);
-  if (!prev) return;
-  const cur = { x: e.clientX, y: e.clientY };
-  if (pts.size === 1) {
-    z.x += cur.x - prev.x; z.y += cur.y - prev.y; zApply();
-    moved += Math.abs(cur.x - prev.x) + Math.abs(cur.y - prev.y);
-  } else if (pts.size === 2) {
-    const other = [...pts.entries()].find(([id]) => id !== e.pointerId)[1];
-    const d0 = Math.hypot(prev.x - other.x, prev.y - other.y) || 1;
-    const d1 = Math.hypot(cur.x - other.x, cur.y - other.y) || 1;
-    const m0 = { x: (prev.x + other.x) / 2, y: (prev.y + other.y) / 2 };
-    const m1 = { x: (cur.x + other.x) / 2, y: (cur.y + other.y) / 2 };
-    z.x += m1.x - m0.x; z.y += m1.y - m0.y;
-    zoomAt(z.s * d1 / d0, m1.x, m1.y);
-    moved += 99;
-  }
-  pts.set(e.pointerId, cur);
-});
-const endPointer = (e) => {
-  if (!pts.has(e.pointerId)) return;
-  pts.delete(e.pointerId);
-  if (pts.size === 0 && moved < 8) {                 // a tap: check for double-tap
-    const now = performance.now();
-    if (now - lastTap.t < 320 && Math.hypot(e.clientX - lastTap.x, e.clientY - lastTap.y) < 30) {
-      zoomAt(z.s > 1.4 ? 1 : 2.5, e.clientX, e.clientY);
-      lastTap.t = 0;
-    } else lastTap = { t: now, x: e.clientX, y: e.clientY };
-  }
-};
-zoomEl.addEventListener('pointerup', endPointer);
-zoomEl.addEventListener('pointercancel', endPointer);
-zoomEl.addEventListener('wheel', (e) => {
-  e.preventDefault();
-  zoomAt(z.s * Math.exp(-e.deltaY * 0.0015), e.clientX, e.clientY);
-}, { passive: false });
 
 /* ==========================================================
    PAGE CHROME

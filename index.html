@@ -12,7 +12,12 @@
 <script defer src="/_vercel/insights/script.js"></script>
 
 
+<!-- Share preview text (LINE / Facebook / Threads) -->
 <meta name="description" content="Stories, design, and us — The Designers Vol.57." />
+<meta property="og:type" content="website" />
+<meta property="og:title" content="設計人 — Vol.57" />
+<meta property="og:description" content="Stories, design, and us — The Designers Vol.57." />
+<meta property="og:url" content="https://thedesignersvol57.vercel.app/" />
 
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -288,6 +293,20 @@ body::before {
 }
 .stage:fullscreen .book-wrap { --book-scale: 1; width: min(96vw, calc((100vh - 170px) * 1.577)); }
 .stage:fullscreen .controls { margin-top: 50px; }
+
+/* "fullscreen" that also works on iPhone (Safari can't fullscreen a <div>) */
+html.fs-lock, html.fs-lock body { overflow: hidden; }
+.stage.is-fs {
+  position: fixed; inset: 0; z-index: 150; margin: 0; border: 0;
+  justify-content: center;
+  padding: max(14px, env(safe-area-inset-top)) 10px max(14px, env(safe-area-inset-bottom));
+  background: radial-gradient(60% 55% at 50% 45%, #1b1b1b 0%, var(--bg) 100%);
+}
+.stage.is-fs .book-wrap { --book-scale: 1; width: min(96vw, calc((100dvh - 130px) * 1.577)); }
+.stage.is-fs .book-wrap.is-single { width: min(94vw, calc((100dvh - 130px) * 0.789)); }
+.book-wrap.is-single .book { aspect-ratio: 235 / 298; }
+.stage.is-fs .controls { margin-top: 26px; }
+.stage.is-fs .hint, .stage.is-fs .stage__corner { display: none; }
 
 /* ==========================================================
    PAGE PLACEHOLDERS (inside the book)
@@ -835,17 +854,20 @@ function loadAround(pages) {
   }
 }
 
-const bookEl = $('#book');
-const frag = document.createDocumentFragment();
-for (let i = 0; i < N; i++) frag.appendChild(createPage(N - i));
-bookEl.appendChild(frag);
+let bookEl = $('#book');
+function fillBook(el) {
+  const frag = document.createDocumentFragment();
+  for (let i = 0; i < N; i++) frag.appendChild(createPage(N - i));
+  el.appendChild(frag);
+}
+fillBook(bookEl);
 
 /* ==========================================================
    FLIP ENGINE
    ========================================================== */
 let pageFlip = null;
 
-function initBook() {
+function initBook(startIndex, single = false) {
   if (!window.St || !St.PageFlip) {
     $('#bookWrap').style.display = 'none';
     $('#fallback').style.display = 'block';
@@ -853,13 +875,15 @@ function initBook() {
   }
 
   // reversed library order: right page r of a spread → left page r+1 → index N-(r+1)
-  const start = CONFIG.startSpread > 0 ? N - (CONFIG.startSpread + 1) : N - 1;
+  const start = startIndex ?? (CONFIG.startSpread > 0 ? N - (CONFIG.startSpread + 1) : N - 1);
 
   pageFlip = new St.PageFlip(bookEl, {
     width: 470,               // single page = 23.5 × 29.8 cm (× 20)
     height: 596,
     size: 'stretch',
-    minWidth: 140,
+    // single = one page at a time (phone fullscreen): the engine turns single-page when its box
+    // is narrower than 2 × minWidth, so minWidth is set just above half the box width
+    minWidth: single ? Math.ceil(($('#bookWrap').getBoundingClientRect().width || 300) * 0.6) : 140,
     maxWidth: 1000,
     minHeight: 178,
     maxHeight: 1268,
@@ -867,7 +891,7 @@ function initBook() {
     drawShadow: true,
     maxShadowOpacity: 0.55,
     flippingTime: 900,
-    usePortrait: false,       // never fall back to a single page: always a two-page spread
+    usePortrait: single,      // normal view: always a two-page spread
     startPage: start,
     autoSize: true,
     mobileScrollSupport: false,
@@ -942,19 +966,62 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'ArrowRight') { e.preventDefault(); goPrev(); }
 });
 
-/* fullscreen */
+/* fullscreen — works on desktop, Android AND iPhone.
+   On a phone held upright the book switches to one page at a time, so it is big enough to read. */
 const stage = $('#stage');
-$('#btnFs').addEventListener('click', () => {
-  if (!document.fullscreenElement) (stage.requestFullscreen || stage.webkitRequestFullscreen)?.call(stage);
-  else (document.exitFullscreen || document.webkitExitFullscreen)?.call(document);
-});
-document.addEventListener('fullscreenchange', () => {
-  const on = !!document.fullscreenElement;
+let fsOn = false, rzT;
+const isPhonePortrait = () => innerWidth < 760 && innerHeight > innerWidth;
+
+function rebuildBook(single, startIndex) {
+  try { pageFlip && pageFlip.destroy(); } catch (_) {}
+  pageFlip = null;
+  document.querySelectorAll('#book').forEach((el) => el.remove());
+  const wrap = $('#bookWrap');
+  bookEl = document.createElement('div');
+  bookEl.className = 'book'; bookEl.id = 'book';
+  wrap.insertBefore(bookEl, wrap.querySelector('.book-shadow'));
+  fillBook(bookEl);
+  wrap.classList.toggle('is-single', single);
+  initBook(startIndex, single);
+}
+function syncBookMode() {
+  if (!pageFlip) return;
+  const wantSingle = fsOn && isPhonePortrait();
+  const isSingle = $('#bookWrap').classList.contains('is-single');
+  if (wantSingle === isSingle) return;
+  const idx = wantSingle ? N - visiblePages()[0] : pageFlip.getCurrentPageIndex();
+  rebuildBook(wantSingle, idx);
+}
+function setFsIcon(on) {
   $('#fsIcon').innerHTML = on
     ? '<path d="M6 2v4H2M14 6h-4V2M10 14v-4h4M2 10h4v4"/>'
     : '<path d="M2 6V2h4M10 2h4v4M14 10v4h-4M6 14H2v-4"/>';
-  // let layout settle, then let the engine re-measure
-  setTimeout(() => { window.dispatchEvent(new Event('resize')); updateUI(); }, 120);
+}
+function refit() { setTimeout(() => { window.dispatchEvent(new Event('resize')); updateUI(); }, 120); }
+function enterFs() {
+  fsOn = true;
+  stage.classList.add('is-fs');
+  document.documentElement.classList.add('fs-lock');
+  try {
+    const req = stage.requestFullscreen || stage.webkitRequestFullscreen;
+    const p = req && req.call(stage);
+    if (p && p.catch) p.catch(() => {});
+  } catch (_) {}
+  setFsIcon(true); syncBookMode(); refit();
+}
+function exitFs() {
+  fsOn = false;
+  stage.classList.remove('is-fs');
+  document.documentElement.classList.remove('fs-lock');
+  if (document.fullscreenElement) (document.exitFullscreen || document.webkitExitFullscreen)?.call(document);
+  setFsIcon(false); syncBookMode(); refit();
+}
+$('#btnFs').addEventListener('click', () => (fsOn ? exitFs() : enterFs()));
+document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement && fsOn) exitFs(); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && fsOn && !zoomOpen()) exitFs(); });
+addEventListener('resize', () => {                 // phone rotated while in fullscreen
+  if (!fsOn) return;
+  clearTimeout(rzT); rzT = setTimeout(syncBookMode, 250);
 });
 
 /* ==========================================================

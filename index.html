@@ -919,5 +919,10 @@ window.addEventListener('load', () => {
   requestAnimationFrame(() => document.body.classList.add('is-ready'));
 });
 </script>
+<script>
+  if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+  if (location.hash) history.replaceState(null, '', location.pathname);
+  window.addEventListener('load', () => window.scrollTo(0, 0));
+</script>
 </body>
 </html>
